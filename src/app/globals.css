@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --innago-blue: #1B4DFF;
+  --innago-blue-dark: #1339CC;
+  --innago-blue-light: #EEF2FF;
+  --innago-green: #00A86B;
+  --innago-green-light: #E6F7F1;
+  --innago-red: #E53935;
+  --innago-red-light: #FEECEB;
+  --innago-yellow: #F59E0B;
+  --innago-yellow-light: #FEF3C7;
+  --innago-dark: #1A1D2E;
+}
+
+body {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  background-color: #F8F9FB;
+  color: #1A1D2E;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F3F4F6; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Prose for briefs */
+.prose h2 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #1A1D2E; }
+.prose p { margin-bottom: 0.75rem; color: #374151; line-height: 1.6; }
+.prose ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.prose ul li { margin-bottom: 0.25rem; color: #374151; }
+.prose strong { font-weight: 600; color: #1A1D2E; }
