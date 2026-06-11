@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
 
     const results: Array<Record<string, unknown>> = [];
     const sources = { apollo: 0, ahrefs: 0 };
+    const errors: Record<string, string> = {};
 
     // ── Apollo people search ─────────────────────────────────────────────────
     try {
@@ -50,8 +51,12 @@ export async function POST(req: NextRequest) {
           _preview: true,
         });
       }
-    } catch (e) {
-      console.error('Apollo preview error:', e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const status = (e as { response?: { status?: number; data?: unknown } })?.response?.status;
+      const data = (e as { response?: { status?: number; data?: unknown } })?.response?.data;
+      errors.apollo = `${msg} (status: ${status ?? 'N/A'}, response: ${JSON.stringify(data)})`;
+      console.error('Apollo preview error:', errors.apollo);
     }
 
     // ── Ahrefs top-ranking PM domains ────────────────────────────────────────
@@ -78,8 +83,12 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    } catch (e) {
-      console.error('Ahrefs preview error:', e);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const status = (e as { response?: { status?: number; data?: unknown } })?.response?.status;
+      const data = (e as { response?: { status?: number; data?: unknown } })?.response?.data;
+      errors.ahrefs = `${msg} (status: ${status ?? 'N/A'}, response: ${JSON.stringify(data)})`;
+      console.error('Ahrefs preview error:', errors.ahrefs);
     }
 
     // Check which are already in DB (for duplicate flagging)
@@ -117,6 +126,7 @@ export async function POST(req: NextRequest) {
         qualified: fresh.filter((p) => (p as any).recommended).length,
         sources,
       },
+      ...(Object.keys(errors).length > 0 && { errors }),
     });
   } catch (error) {
     return NextResponse.json({ error: 'Preview failed', detail: String(error) }, { status: 500 });
