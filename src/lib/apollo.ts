@@ -42,6 +42,8 @@ export async function searchPeopleByCity(params: ApolloSearchParams) {
     ],
     // Use only person_locations — combining both filters is too restrictive
     person_locations: [`${city}, ${state}, United States`],
+    // Only return people where Apollo already has an email on file (no export credit needed)
+    contact_email_status: ['verified', 'guessed'],
   };
 
   if (minEmployees) payload['organization_num_employees_ranges'] = [`${minEmployees},${maxEmployees ?? 10000}`];

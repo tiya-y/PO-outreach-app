@@ -18,8 +18,11 @@ export async function POST(req: NextRequest) {
     // ── Source 1: Apollo people search ──────────────────────────────────────
     let apolloPeople: Array<Record<string, unknown>> = [];
     try {
-      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 25 });
-      apolloPeople = apolloData.people ?? [];
+      // perPage 50 since we'll filter to email-only, so we get ~25 usable results
+      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 50 });
+      apolloPeople = (apolloData.people ?? apolloData.contacts ?? [])
+        // Only keep people where Apollo already has an email — no credit spent
+        .filter((p: Record<string, unknown>) => p.email && p.email !== '');
     } catch (e) {
       console.error('Apollo people search error:', e);
     }
