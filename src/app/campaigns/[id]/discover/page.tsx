@@ -113,6 +113,17 @@ export default function DiscoverPage() {
     }
   };
 
+  const clearProspects = async () => {
+    if (!confirm(`Delete all ${prospects.length} prospects from this campaign? This cannot be undone.`)) return;
+    const toastId = toast.loading('Clearing prospects...');
+    const { error } = await supabase.from('prospects').delete().eq('campaign_id', campaignId);
+    toast.dismiss(toastId);
+    if (error) { toast.error('Failed to clear prospects'); return; }
+    toast.success('Prospects cleared');
+    await loadData();
+    setPage(1);
+  };
+
   const scored = prospects.filter((p) => p.qualification_score !== 50);
   const unscored = prospects.filter((p) => p.qualification_score === 50);
 
@@ -150,10 +161,20 @@ export default function DiscoverPage() {
         <h1 className="text-xl font-semibold text-gray-900">
           Prospect Discovery — {campaign?.city}, {campaign?.state}
         </h1>
-        <Link href={`/campaigns/${campaignId}/outreach`}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 px-3 py-2 rounded-lg">
-          Go to Outreach <ChevronRight size={13} />
-        </Link>
+        <div className="flex items-center gap-2">
+          {prospects.length > 0 && (
+            <button
+              onClick={clearProspects}
+              className="flex items-center gap-1.5 text-sm text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors"
+            >
+              Clear all prospects
+            </button>
+          )}
+          <Link href={`/campaigns/${campaignId}/outreach`}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 bg-gray-100 px-3 py-2 rounded-lg">
+            Go to Outreach <ChevronRight size={13} />
+          </Link>
+        </div>
       </div>
 
       {/* ── 3-Step Flow ───────────────────────────────────────────────────── */}
