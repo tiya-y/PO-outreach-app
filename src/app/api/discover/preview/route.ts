@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchPeopleByCity, searchCompaniesByCity } from '@/lib/apollo';
-import { findRankingPMSitesForCity } from '@/lib/ahrefs';
-import { scoreProspect } from '@/lib/claude';
+import { searchPeopleByCity } from '@/lib/apollo';
 import { createServiceClient } from '@/lib/supabase';
+
+// Max execution time hint for Vercel
+export const maxDuration = 30;
 
 // Preview discovery — returns prospects WITHOUT saving to DB
 export async function POST(req: NextRequest) {
@@ -25,14 +26,6 @@ export async function POST(req: NextRequest) {
 
       for (const person of people) {
         const org = (person.organization as Record<string, unknown>) ?? {};
-        const score = await scoreProspect({
-          title: (person.title as string) ?? '',
-          company: (org.name as string) ?? '',
-          employeeCount: (org.num_employees as number) ?? undefined,
-          website: (org.website_url as string) ?? undefined,
-          location: `${city}, ${state}`,
-        }).catch(() => ({ score: 50, notes: '', recommended: true }));
-
         results.push({
           first_name: person.first_name,
           last_name: person.last_name,
@@ -46,9 +39,10 @@ export async function POST(req: NextRequest) {
           company_employee_count: (org.num_employees as number) ?? null,
           source: 'apollo',
           apollo_id: person.id,
-          qualification_score: score.score,
-          qualification_notes: score.notes,
-          recommended: score.recommended,
+          // Scoring happens after import to avoid timeout
+          qualification_score: 50,
+          qualification_notes: 'Score pending — run enrich to qualify',
+          recommended: true,
           _preview: true,
         });
       }
@@ -61,35 +55,37 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Ahrefs top-ranking PM domains ────────────────────────────────────────
-    try {
-      const ahrefsData = await findRankingPMSitesForCity(city, state);
-      const seen = new Set<string>();
-      for (const kw of ahrefsData) {
-        for (const domain of kw.domains) {
-          if (!seen.has(domain.domain)) {
-            seen.add(domain.domain);
-            sources.ahrefs++;
-            results.push({
-              company_website: `https://${domain.domain}`,
-              company: domain.domain.replace('www.', '').replace(/\.(com|net|org)$/, ''),
-              city,
-              state,
-              source: 'ahrefs',
-              qualification_score: Math.min(90, 40 + (domain.traffic ?? 0) / 100),
-              qualification_notes: `Ranking for "${kw.keyword}"`,
-              enrichment_data: { ahrefs_position: domain.position, keyword: kw.keyword },
-              recommended: true,
-              _preview: true,
-            });
+    // Skipped in preview to avoid timeout — only runs on Direct Import
+    if (process.env.AHREFS_API_KEY) {
+      try {
+        const { findRankingPMSitesForCity } = await import('@/lib/ahrefs');
+        const ahrefsData = await findRankingPMSitesForCity(city, state);
+        const seen = new Set<string>();
+        for (const kw of ahrefsData) {
+          for (const domain of kw.domains) {
+            if (!seen.has(domain.domain)) {
+              seen.add(domain.domain);
+              sources.ahrefs++;
+              results.push({
+                company_website: `https://${domain.domain}`,
+                company: domain.domain.replace('www.', '').replace(/\.(com|net|org)$/, ''),
+                city,
+                state,
+                source: 'ahrefs',
+                qualification_score: 70,
+                qualification_notes: `Ranking for "${kw.keyword}"`,
+                enrichment_data: { ahrefs_position: domain.position, keyword: kw.keyword },
+                recommended: true,
+                _preview: true,
+              });
+            }
           }
         }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.ahrefs = msg;
+        console.error('Ahrefs preview error:', errors.ahrefs);
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      const status = (e as { response?: { status?: number; data?: unknown } })?.response?.status;
-      const data = (e as { response?: { status?: number; data?: unknown } })?.response?.data;
-      errors.ahrefs = `${msg} (status: ${status ?? 'N/A'}, response: ${JSON.stringify(data)})`;
-      console.error('Ahrefs preview error:', errors.ahrefs);
     }
 
     // Check which are already in DB (for duplicate flagging)
