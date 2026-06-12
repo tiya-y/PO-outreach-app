@@ -46,7 +46,7 @@ export async function searchPeopleByCity(params: ApolloSearchParams) {
 
   if (minEmployees) payload['organization_num_employees_ranges'] = [`${minEmployees},${maxEmployees ?? 10000}`];
 
-  const res = await apolloClient.post('/mixed_people/search', payload);
+  const res = await apolloClient.post('/mixed_people/api_search', payload);
 
   // Log raw response shape to help debug
   const data = res.data;
@@ -57,7 +57,7 @@ export async function searchPeopleByCity(params: ApolloSearchParams) {
 }
 
 export async function searchCompaniesByCity(city: string, state: string) {
-  const res = await apolloClient.post('/mixed_companies/search', {
+  const res = await apolloClient.post('/mixed_companies/api_search', {
     page: 1,
     per_page: 25,
     organization_locations: [`${city}, ${state}`],
