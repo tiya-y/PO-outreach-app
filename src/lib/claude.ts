@@ -189,20 +189,29 @@ export async function scoreProspect(data: {
   employeeCount?: number;
   website?: string;
   location: string;
+  signals?: Record<string, unknown>;
 }): Promise<{ score: number; notes: string; recommended: boolean }> {
+  const { signals, ...baseData } = data;
   const prompt = `Score this property owner/manager prospect for Innago outreach on a scale of 0-100. Innago targets independent landlords and small-to-mid property management companies (1-500 units).
 
 PROSPECT DATA:
-${JSON.stringify(data, null, 2)}
+${JSON.stringify(baseData, null, 2)}
 
-Scoring criteria:
-- Title relevance (property manager, owner, landlord, real estate investor = higher score)
-- Company size (1-50 employees ideal for SMB focus, but 50-200 also valid)
-- Has website (signal of established business)
-- Location (US-based, major rental market = higher)
+${signals && Object.keys(signals).length > 0 ? `ENRICHMENT SIGNALS:
+${JSON.stringify(signals, null, 2)}` : ''}
+
+Scoring criteria (weight in order):
+1. Title relevance — property manager, owner, landlord, real estate investor = high; generic investor at a bank = low
+2. Estimated units / portfolio size — more units = better fit for Innago
+3. Company employee count — 1-50 is ideal SMB, 50-200 also valid
+4. Web presence / domain rating — established PM business with real website = higher
+5. Organic traffic / keyword rankings — ranking for "property management [city]" = serious operator
+6. Years in business / founded year — longer history = more likely to switch software
+7. Annual revenue — higher revenue = bigger portfolio
+8. Industry fit — pure property management or real estate is ideal
 
 Return ONLY valid JSON:
-{"score": 0-100, "notes": "one sentence explanation", "recommended": true|false}`;
+{"score": 0-100, "notes": "one sentence explanation citing the top signal", "recommended": true|false}`;
 
   const message = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
