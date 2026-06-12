@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     // ── Apollo people search ─────────────────────────────────────────────────
     try {
       const apolloData = await searchPeopleByCity({ city, state, page, perPage: 25 });
-      const people = apolloData.people ?? [];
+      // Apollo returns results under 'people' or 'contacts' depending on plan/endpoint
+      const people = apolloData.people ?? apolloData.contacts ?? [];
       sources.apollo = people.length;
 
       for (const person of people) {

@@ -40,15 +40,20 @@ export async function searchPeopleByCity(params: ApolloSearchParams) {
       'Asset Manager',
       'Property Management Company Owner',
     ],
-    person_locations: [`${city}, ${state}`],
-    organization_locations: [`${city}, ${state}`],
-    contact_email_status: ['verified', 'guessed', 'unavailable'],
+    // Use only person_locations — combining both filters is too restrictive
+    person_locations: [`${city}, ${state}, United States`],
   };
 
   if (minEmployees) payload['organization_num_employees_ranges'] = [`${minEmployees},${maxEmployees ?? 10000}`];
 
   const res = await apolloClient.post('/mixed_people/search', payload);
-  return res.data;
+
+  // Log raw response shape to help debug
+  const data = res.data;
+  console.log('Apollo raw response keys:', Object.keys(data));
+  console.log('Apollo people count:', data?.people?.length ?? data?.contacts?.length ?? 'unknown key');
+
+  return data;
 }
 
 export async function searchCompaniesByCity(city: string, state: string) {
