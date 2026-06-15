@@ -23,6 +23,7 @@ export default function DiscoverPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [movingToOutreach, setMovingToOutreach] = useState(false);
   const [page, setPage] = useState(1);
+  const [credits, setCredits] = useState<{ left: number; limit: number; cycle_ends: string | null } | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -37,6 +38,14 @@ export default function DiscoverPage() {
   }, [campaignId]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Load Apollo credit balance
+  useEffect(() => {
+    fetch('/api/apollo/credits')
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setCredits({ left: d.export.left, limit: d.export.limit, cycle_ends: d.cycle_ends }); })
+      .catch(() => {});
+  }, []);
 
   // Step 1 — Search Apollo
   const searchApollo = async () => {
@@ -262,6 +271,16 @@ export default function DiscoverPage() {
             <span className="text-sm font-semibold text-gray-800">Select &amp; Move</span>
           </div>
           <p className="text-xs text-gray-500 mb-2">Check the prospects to contact. Emails are revealed <span className="font-medium text-orange-600">only when you generate outreach</span> (1 credit each).</p>
+          {credits && (
+            <div className={`flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg mb-2 font-medium ${
+              credits.left > 50 ? 'bg-green-100 text-green-700' :
+              credits.left > 10 ? 'bg-yellow-100 text-yellow-700' :
+              'bg-red-100 text-red-600'
+            }`}>
+              <span>Apollo export credits</span>
+              <span>{credits.left} / {credits.limit} left</span>
+            </div>
+          )}
           {suggested.length > 0 && (
             <button onClick={selectSuggested}
               className="w-full text-xs text-orange-700 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg mb-2 transition-colors font-medium">
