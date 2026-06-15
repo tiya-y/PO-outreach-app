@@ -19,11 +19,11 @@ export async function POST(req: NextRequest) {
 
     // ── Apollo people search ─────────────────────────────────────────────────
     try {
-      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 10 });
-      // Apollo returns results under 'people' or 'contacts' depending on plan/endpoint
-      // Only keep people where Apollo already has an email — no export credit spent
+      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 25 });
+      // api_search never returns actual emails — filter by has_email flag (free, no credits)
+      // Actual emails are revealed during the Enrich step (costs 1 export credit each)
       const people = (apolloData.people ?? apolloData.contacts ?? [])
-        .filter((p: Record<string, unknown>) => p.email && p.email !== '');
+        .filter((p: Record<string, unknown>) => p.has_email === true);
       sources.apollo = people.length;
 
       for (const person of people) {

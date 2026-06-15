@@ -41,8 +41,6 @@ export async function searchPeopleByCity(params: ApolloSearchParams) {
       'Property Management Company Owner',
     ],
     person_locations: [`${city}, ${state}, United States`],
-    // Reveal emails using export credits (1 credit per person with email found)
-    reveal_personal_emails: true,
   };
 
   if (minEmployees) payload['organization_num_employees_ranges'] = [`${minEmployees},${maxEmployees ?? 10000}`];

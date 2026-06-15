@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
     let apolloPeople: Array<Record<string, unknown>> = [];
     let totalFound = 0;
     try {
-      // perPage 10 — each revealed email costs 1 export credit (250/mo on Basic plan)
-      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 10 });
+      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 25 });
       const all = apolloData.people ?? apolloData.contacts ?? [];
       totalFound = all.length;
-      // Only keep people where Apollo already has an email — no export credits spent
-      apolloPeople = all.filter((p: Record<string, unknown>) => p.email && p.email !== '');
-      console.log(`Apollo: ${totalFound} total, ${apolloPeople.length} with email`);
+      // api_search never returns actual emails — filter by has_email flag (free, no credits)
+      // Actual emails are revealed during the Enrich step (costs 1 export credit each)
+      apolloPeople = all.filter((p: Record<string, unknown>) => p.has_email === true);
+      console.log(`Apollo: ${totalFound} total, ${apolloPeople.length} with email available`);
     } catch (e) {
       console.error('Apollo search error:', e);
       return NextResponse.json({ error: 'Apollo search failed', detail: String(e) }, { status: 500 });
