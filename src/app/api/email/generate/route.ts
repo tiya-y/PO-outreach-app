@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateOutreachEmail } from '@/lib/claude';
+import { enrichPerson } from '@/lib/apollo';
 import { createServiceClient } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
@@ -17,6 +18,25 @@ export async function POST(req: NextRequest) {
     if (!prospect) return NextResponse.json({ error: 'Prospect not found' }, { status: 404 });
 
     const campaign = prospect.campaigns as Record<string, unknown>;
+
+    // ── Reveal email now (1 export credit) if we don't have it yet ───────────
+    if (!prospect.email && (prospect.first_name || prospect.linkedin_url)) {
+      try {
+        const person = await enrichPerson({
+          linkedin_url: prospect.linkedin_url ?? undefined,
+          first_name: prospect.first_name ?? undefined,
+          last_name: prospect.last_name ?? undefined,
+          organization_name: prospect.company ?? undefined,
+          revealEmail: true, // spend the credit here
+        });
+        if (person?.email) {
+          await supabase.from('prospects').update({ email: person.email }).eq('id', prospectId);
+          prospect.email = person.email;
+        }
+      } catch (e) {
+        console.error('Email reveal failed:', e);
+      }
+    }
 
     const email = await generateOutreachEmail({
       firstName: prospect.first_name ?? 'there',

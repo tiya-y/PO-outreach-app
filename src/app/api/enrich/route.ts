@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
     const updates: Record<string, unknown> = {};
     const signals: Record<string, unknown> = {};
 
-    // ── 1. Apollo person enrichment ──────────────────────────────────────────
-    if (prospect.email || prospect.linkedin_url) {
+    // ── 1. Apollo person enrichment (no email reveal — saved for email generation step) ──
+    if (prospect.apollo_id || prospect.linkedin_url || prospect.first_name) {
       try {
         const person = await enrichPerson({
-          email: prospect.email ?? undefined,
+          // Don't pass email here — we reveal it only when generating outreach emails
           linkedin_url: prospect.linkedin_url ?? undefined,
           first_name: prospect.first_name ?? undefined,
           last_name: prospect.last_name ?? undefined,

@@ -73,10 +73,11 @@ export async function searchCompaniesByCity(city: string, state: string) {
 
 // ── Enrichment ────────────────────────────────────────────────────────────────
 
-export async function enrichPerson(params: { email?: string; linkedin_url?: string; first_name?: string; last_name?: string; organization_name?: string }) {
+export async function enrichPerson(params: { email?: string; linkedin_url?: string; first_name?: string; last_name?: string; organization_name?: string; revealEmail?: boolean }) {
+  const { revealEmail = false, ...rest } = params;
   const res = await apolloClient.post('/people/match', {
-    ...params,
-    reveal_personal_emails: true,
+    ...rest,
+    reveal_personal_emails: revealEmail, // only true when generating outreach emails
     reveal_phone_number: false,
   });
   return res.data.person;
