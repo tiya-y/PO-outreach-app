@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // ── Apollo people search ─────────────────────────────────────────────────
     try {
-      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 50 });
+      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 10 });
       // Apollo returns results under 'people' or 'contacts' depending on plan/endpoint
       // Only keep people where Apollo already has an email — no export credit spent
       const people = (apolloData.people ?? apolloData.contacts ?? [])

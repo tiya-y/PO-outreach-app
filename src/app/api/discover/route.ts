@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     let apolloPeople: Array<Record<string, unknown>> = [];
     let totalFound = 0;
     try {
-      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 50 });
+      // perPage 10 — each revealed email costs 1 export credit (250/mo on Basic plan)
+      const apolloData = await searchPeopleByCity({ city, state, page, perPage: 10 });
       const all = apolloData.people ?? apolloData.contacts ?? [];
       totalFound = all.length;
       // Only keep people where Apollo already has an email — no export credits spent
