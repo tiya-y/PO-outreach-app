@@ -111,11 +111,30 @@ export function getAuthorizationUrl(state?: string) {
     client_id: process.env.MS365_CLIENT_ID!,
     response_type: 'code',
     redirect_uri: process.env.MS365_REDIRECT_URI!,
-    scope: 'Calendars.ReadWrite User.Read offline_access',
+    scope: 'Calendars.ReadWrite Mail.Send Mail.Read User.Read offline_access',
     response_mode: 'query',
     ...(state ? { state } : {}),
   });
   return `https://login.microsoftonline.com/${process.env.MS365_TENANT_ID}/oauth2/v2.0/authorize?${params}`;
+}
+
+// ── Send mail via Microsoft Graph ─────────────────────────────────────────────
+
+export async function sendMailViaGraph(accessToken: string, params: {
+  toEmail: string;
+  toName?: string;
+  subject: string;
+  bodyHtml: string;
+}) {
+  const client = graphClient(accessToken);
+  await client.post('/me/sendMail', {
+    message: {
+      subject: params.subject,
+      body: { contentType: 'HTML', content: params.bodyHtml },
+      toRecipients: [{ emailAddress: { address: params.toEmail, name: params.toName ?? params.toEmail } }],
+    },
+    saveToSentItems: true,
+  });
 }
 
 export async function exchangeCodeForTokens(code: string) {

@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Target, Calendar, Settings, ChevronRight,
-  Building2, Zap
+  Building2, Zap, Mail
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/campaigns', label: 'Campaigns', icon: Target },
+  { href: '/outreach', label: 'Outreach', icon: Mail },
   { href: '/meetings', label: 'Meetings', icon: Calendar },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
