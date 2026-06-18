@@ -6,10 +6,24 @@ import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import {
   Search, Loader2, Users, ChevronRight, Linkedin, Globe, Star,
-  RefreshCw, Sparkles, ArrowRight, CheckCircle, Clock, Trash2
+  RefreshCw, Sparkles, ArrowRight, CheckCircle, Clock, Trash2, ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 import type { Campaign, Prospect } from '@/types';
+
+function SignalRow({ label, value, hint, badge }: { label: string; value: string; hint?: string; badge?: 'green' | 'yellow' | 'gray' }) {
+  const badgeClass = badge === 'green' ? 'bg-green-100 text-green-700' : badge === 'yellow' ? 'bg-yellow-100 text-yellow-700' : badge === 'gray' ? 'bg-gray-100 text-gray-500' : '';
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-[11px] text-gray-400" title={hint}>{label}{hint && <span className="ml-0.5 opacity-50">ⓘ</span>}</span>
+      {badge ? (
+        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded capitalize ${badgeClass}`}>{value}</span>
+      ) : (
+        <span className="text-[11px] font-medium text-gray-700 text-right">{value}</span>
+      )}
+    </div>
+  );
+}
 
 export default function DiscoverPage() {
   const { id: campaignId } = useParams() as { id: string };
@@ -21,6 +35,7 @@ export default function DiscoverPage() {
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [enrichProgress, setEnrichProgress] = useState<{ done: number; total: number } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [movingToOutreach, setMovingToOutreach] = useState(false);
   const [page, setPage] = useState(1);
   const [credits, setCredits] = useState<{ left: number; limit: number; cycle_ends: string | null } | null>(null);
@@ -331,77 +346,174 @@ export default function DiscoverPage() {
           </div>
 
           <div className="space-y-2">
-            {prospects.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => toggle(p.id)}
-                className={`rounded-xl border px-4 py-3.5 flex items-center gap-3 cursor-pointer transition-all ${rowBg(p)}`}
-              >
-                {/* Checkbox */}
-                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  selected.has(p.id) ? 'bg-[#1B4DFF] border-[#1B4DFF]' : 'border-gray-300 bg-white'
-                }`}>
-                  {selected.has(p.id) && <CheckCircle size={13} className="text-white" />}
-                </div>
+            {prospects.map((p) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const ed = (p.enrichment_data ?? {}) as Record<string, any>;
+              const isExpanded = expanded === p.id;
 
-                {/* Avatar */}
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold text-blue-700">
-                  {(p.first_name?.[0] ?? p.company?.[0] ?? '?').toUpperCase()}
-                </div>
+              return (
+                <div key={p.id} className="rounded-xl border overflow-hidden transition-all"
+                  style={{ borderColor: selected.has(p.id) ? '#1B4DFF' : undefined }}>
 
-                {/* Name + info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-gray-900">
-                      {p.first_name || p.last_name ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : p.company ?? 'Unknown'}
-                    </span>
-                    {p.portfolio_size && (
-                      <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100">~{p.portfolio_size} units</span>
-                    )}
-                    {p.status === 'qualified' && (
-                      <span className="text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full border border-green-100">in outreach</span>
-                    )}
+                  {/* Row */}
+                  <div
+                    onClick={() => toggle(p.id)}
+                    className={`px-4 py-3.5 flex items-center gap-3 cursor-pointer transition-all ${rowBg(p)}`}
+                  >
+                    {/* Checkbox */}
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      selected.has(p.id) ? 'bg-[#1B4DFF] border-[#1B4DFF]' : 'border-gray-300 bg-white'
+                    }`}>
+                      {selected.has(p.id) && <CheckCircle size={13} className="text-white" />}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold text-blue-700">
+                      {(p.first_name?.[0] ?? p.company?.[0] ?? '?').toUpperCase()}
+                    </div>
+
+                    {/* Name + info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-gray-900">
+                          {p.first_name || p.last_name ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : p.company ?? 'Unknown'}
+                        </span>
+                        {p.portfolio_size && (
+                          <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100">~{p.portfolio_size} units</span>
+                        )}
+                        {p.status === 'qualified' && (
+                          <span className="text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full border border-green-100">in outreach</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5 truncate">
+                        {[p.title, p.company].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+
+                    {/* Score badge — click to expand */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setExpanded(isExpanded ? null : p.id); }}
+                      title="See scoring details"
+                      className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 border transition-all hover:opacity-80 ${
+                        p.qualification_score === 50
+                          ? 'text-gray-400 bg-gray-50 border-gray-200'
+                          : scoreColor(p.qualification_score)
+                      }`}>
+                      {p.qualification_score === 50 ? (
+                        <><Clock size={10} /> pending</>
+                      ) : (
+                        <><Star size={10} />{p.qualification_score}</>
+                      )}
+                      <ChevronDown size={10} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Links + re-enrich */}
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {p.linkedin_url && (
+                        <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="text-gray-300 hover:text-blue-500 transition-colors">
+                          <Linkedin size={14} />
+                        </a>
+                      )}
+                      {p.company_website && (
+                        <a href={p.company_website} target="_blank" rel="noreferrer" className="text-gray-300 hover:text-blue-500 transition-colors">
+                          <Globe size={14} />
+                        </a>
+                      )}
+                      <button onClick={() => enrichOne(p.id)} disabled={enrichingId === p.id || enrichingAll}
+                        title="Re-score" className="text-gray-300 hover:text-purple-500 disabled:opacity-40 transition-colors">
+                        {enrichingId === p.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5 truncate">
-                    {[p.title, p.company].filter(Boolean).join(' · ')}
-                  </div>
-                  {p.qualification_notes && p.qualification_score !== 50 && (
-                    <div className="text-xs text-gray-400 mt-0.5 italic truncate">{p.qualification_notes}</div>
-                  )}
-                </div>
 
-                {/* Score badge */}
-                <div className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 border ${
-                  p.qualification_score === 50
-                    ? 'text-gray-400 bg-gray-50 border-gray-200'
-                    : scoreColor(p.qualification_score)
-                }`}>
-                  {p.qualification_score === 50 ? (
-                    <span className="flex items-center gap-1"><Clock size={10} /> pending</span>
-                  ) : (
-                    <span className="flex items-center gap-1"><Star size={10} />{p.qualification_score}</span>
-                  )}
-                </div>
+                  {/* Expanded enrichment panel */}
+                  {isExpanded && (
+                    <div className="bg-gray-50 border-t border-gray-100 px-5 py-4">
+                      {p.qualification_score === 50 ? (
+                        <p className="text-xs text-gray-400 italic">No enrichment data yet — click the <RefreshCw size={10} className="inline" /> icon to score this prospect.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {/* AI reasoning */}
+                          {p.qualification_notes && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                                AI Summary
+                                <span className="ml-1 normal-case font-normal text-gray-300">via Claude</span>
+                              </p>
+                              <p className="text-xs text-gray-600 italic">{String(p.qualification_notes ?? '')}</p>
+                            </div>
+                          )}
 
-                {/* Links + re-enrich */}
-                <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {p.linkedin_url && (
-                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="text-gray-300 hover:text-blue-500 transition-colors">
-                      <Linkedin size={14} />
-                    </a>
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Ahrefs signals */}
+                            {(ed.domain_rating !== undefined || ed.organic_traffic !== undefined || ed.organic_keywords !== undefined || ed.web_presence !== undefined) && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-500 mb-2">
+                                  Website
+                                  <a href="https://ahrefs.com" target="_blank" rel="noreferrer" className="ml-1 normal-case font-normal text-purple-300 hover:text-purple-500">via Ahrefs ↗</a>
+                                </p>
+                                <div className="space-y-1.5">
+                                  {ed.domain_rating !== undefined && (
+                                    <SignalRow label="Domain rating" value={`${ed.domain_rating} / 100`} hint="How authoritative their site is" />
+                                  )}
+                                  {ed.organic_traffic !== undefined && (
+                                    <SignalRow label="Monthly visitors" value={Number(ed.organic_traffic).toLocaleString()} hint="Estimated traffic from Google" />
+                                  )}
+                                  {ed.organic_keywords !== undefined && (
+                                    <SignalRow label="Keywords ranking" value={Number(ed.organic_keywords).toLocaleString()} hint="Pages found in Google search" />
+                                  )}
+                                  {ed.web_presence !== undefined && (
+                                    <SignalRow label="Web presence" value={String(ed.web_presence)}
+                                      badge={ed.web_presence === 'strong' ? 'green' : ed.web_presence === 'moderate' ? 'yellow' : 'gray'} />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Apollo / company signals */}
+                            {(ed.employee_count !== undefined || ed.estimated_units !== undefined || ed.annual_revenue_usd !== undefined || ed.founded_year !== undefined || ed.industry !== undefined || ed.years_in_business !== undefined) && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-500 mb-2">
+                                  Company
+                                  <a href="https://apollo.io" target="_blank" rel="noreferrer" className="ml-1 normal-case font-normal text-blue-300 hover:text-blue-500">via Apollo ↗</a>
+                                </p>
+                                <div className="space-y-1.5">
+                                  {ed.industry !== undefined && (
+                                    <SignalRow label="Industry" value={String(ed.industry)} />
+                                  )}
+                                  {ed.employee_count !== undefined && (
+                                    <SignalRow label="Employees" value={String(ed.employee_count)} hint="Larger = more units managed" />
+                                  )}
+                                  {ed.estimated_units !== undefined && (
+                                    <SignalRow label="Est. portfolio" value={`~${Number(ed.estimated_units).toLocaleString()} units`} hint="Inferred from employee count" />
+                                  )}
+                                  {ed.annual_revenue_usd !== undefined && (
+                                    <SignalRow label="Annual revenue" value={`$${Number(ed.annual_revenue_usd).toLocaleString()}`} />
+                                  )}
+                                  {ed.founded_year !== undefined && (
+                                    <SignalRow label="Founded" value={String(ed.founded_year)} />
+                                  )}
+                                  {ed.years_in_business !== undefined && (
+                                    <SignalRow label="Years in business" value={String(ed.years_in_business)} />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {ed.short_description && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">About</p>
+                              <p className="text-xs text-gray-500">{String(ed.short_description)}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
-                  {p.company_website && (
-                    <a href={p.company_website} target="_blank" rel="noreferrer" className="text-gray-300 hover:text-blue-500 transition-colors">
-                      <Globe size={14} />
-                    </a>
-                  )}
-                  <button onClick={() => enrichOne(p.id)} disabled={enrichingId === p.id || enrichingAll}
-                    title="Re-score" className="text-gray-300 hover:text-purple-500 disabled:opacity-40 transition-colors">
-                    {enrichingId === p.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
